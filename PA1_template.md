@@ -1,58 +1,91 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+
 
 ## Loading and preprocessing the data
 Read data from the file activity.zip (provided). 
 
-```{r activity}
+
+```r
 activity <- read.csv(unz('activity.zip','activity.csv'), stringsAsFactors = FALSE, 
                 colClasses = c('integer','Date','integer'))
-
 ```
 
 ## What is mean total number of steps taken per day?
-```{r total-steps}
+
+```r
 total_daily <- aggregate(activity$steps, by=list(activity$date), FUN=sum)
 hist(total_daily$x, xlab='Steps', main='Total number of steps per day')
+```
+
+![](PA1_template_files/figure-html/total-steps-1.png)
+
+```r
 mean_daily <- mean(total_daily$x, na.rm=TRUE)
 median_daily <- median(total_daily$x, na.rm=TRUE)
 ```
-The mean total number of steps taken daily is `r sprintf( "%.2f",mean_daily)`.  
-The median total number of steps taken daily is `r median_daily`.  
+The mean total number of steps taken daily is 10766.19.  
+The median total number of steps taken daily is 10765.  
 
 ## What is the average daily activity pattern?
-```{r average-daily-steps}
+
+```r
 a3 <- complete.cases(activity)
 avg_int <- aggregate(activity[a3,1], by=list(activity[a3,3]), FUN=mean, na.action=na.omit)
 plot(avg_int$Group.1,avg_int$x, type='l', 
      main='Average daily activity',
      xlab='Interval',
      ylab='Number of steps')
+```
+
+![](PA1_template_files/figure-html/average-daily-steps-1.png)
+
+```r
 which.max(avg_int$x)
+```
+
+```
+## [1] 104
 ```
 Interval 104 (min=835) is the maximum.  
 
 ## Imputing missing values
-```{r impute}
-require(dplyr)
 
+```r
+require(dplyr)
+```
+
+```
+## Loading required package: dplyr
+```
+
+```
+## 
+## Attaching package: 'dplyr'
+```
+
+```
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+```
+
+```
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
 missing_values <- activity  %>% 
   filter(is.na(steps)) %>% 
   count(steps)
 ```
-There are `r missing_values$n` missing step values.  
+There are 2304 missing step values.  
 
-```{r impute-mean}
 
+```r
 # Replace a missing value with the mean for x.
 impute_mean <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
 
@@ -62,16 +95,22 @@ imputed_activity <- activity %>%
   mutate(steps = impute_mean(steps))
 ```
 
-```{r imputed-total-steps}
+
+```r
 imputed_daily <- imputed_activity  %>% group_by(date)  %>% summarize(total = sum(steps))
 hist(imputed_daily$total, 
      xlab='Steps', 
      main='Total number of steps per day, with imputed interval mean')
+```
+
+![](PA1_template_files/figure-html/imputed-total-steps-1.png)
+
+```r
 mean_daily <- mean(imputed_daily$total)
 median_daily <- median(imputed_daily$total)
 ```
-The mean total number of steps taken daily is `r sprintf( "%.2f",mean_daily)` (previously 10766.19)..  
-The median total number of steps taken daily is `r sprintf( "%.2f", median_daily)` (previously 10765).
+The mean total number of steps taken daily is 10766.19 (previously 10766.19)..  
+The median total number of steps taken daily is 10766.19 (previously 10765).
 
 #### The impact of imputing data:
 
@@ -81,8 +120,8 @@ The median total number of steps taken daily is `r sprintf( "%.2f", median_daily
 * The median became identical to the mean.   
 
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r weekends-weekdays}
 
+```r
 # Add column indiating if the date cooresponds to a weekend or weekday.
 activity_daytype <- imputed_activity %>% 
   mutate(daytype = ifelse(weekdays(date) %in% list('Saturday', 'Sunday'), 
@@ -104,6 +143,8 @@ ggplot(activity_daytype, aes(x=interval, y=avg)) +
   xlab('Interval') +
   ylab('Number of steps')
 ```
+
+![](PA1_template_files/figure-html/weekends-weekdays-1.png)
 
 On weekends, the graph shows more activity during the evening hours than on weekdays.   
 On weekdays, the graph shows more activity earlier in the day which continues into the afternoon hours. 
